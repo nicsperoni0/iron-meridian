@@ -50,3 +50,6 @@ The full `State` stores the `WorldParams`, so any machine regenerates the identi
 Render/UI (`render.ts`, `pieces.ts`, `icons.ts`, `main.ts`) only read state and emit commands.
 Multiplayer plan: authoritative Node server runs the same `Sim`, clients send commands over WebSocket, server stamps a tick and
 broadcasts (lockstep) or sends state snapshots; saves double as reconnect snapshots.
+
+## v4 — CoN-style visual overhaul (original art)
+Painted land/ocean textures, translucent green (yours) / red (hostile) territory tints, white province borders, red hostile outlines, italic region labels and `City(level)` names, city building textures and map pins, flag-banner unit markers with shadowed 3D-style vehicle sprites, aircraft with ground shadows and red flight paths, light-blue / red air-defense range circles, slate top bar + resource tiles + gold tile, right-side buttons (home, events, advisor, offers), bottom nav, unit action bar (MORE/STOP/PATROL/ATTACK/FERRY/LOADOUT) with info card, and a game-events notification card. Tests: `node tests/v4shots.mjs`, `NOVIDEO=1 node tests/regression.mjs`.

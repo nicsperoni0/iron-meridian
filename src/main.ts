@@ -3,8 +3,10 @@ import { Sim, State, Command, UNITS, MISSILES, BUILDINGS, FOCUS, RES_KEYS, Res, 
 import { BaseData, World, WorldParams, generateWorld, TERRAIN } from './world';
 import { Renderer, PLAYER_COLOR } from './render';
 import { piece } from './pieces';
+import { flag as nflag, vehicle, avatar } from './sprites';
+import { cityLevel } from './render';
 const $ = (q: string) => document.querySelector(q) as HTMLElement;
-const SAVE = 'ironmeridian.save.v3', TICK_MS = 500;
+const SAVE = 'ironmeridian.save.v4', TICK_MS = 500;
 let base: BaseData, world: World, sim: Sim | null = null, R: Renderer, speed = 1, pending: Command[] = [], acc = 0, last = performance.now(), tab: 'region' | 'armies' | 'nation' = 'region', lastEv = 0;
 let strikeKinds = new Set<UKey | MKey>(['uav', 'loiter', 'bomber', 'fighter', 'recon', 'cruise', 'ballistic']);
 const RES_LBL: Record<keyof Res, [string, string]> = { money: ['$', '#ffd34d'], manpower: ['MP', '#7fc8ff'], tech: ['TECH', '#c69bff'] };
@@ -48,7 +50,7 @@ function preview() { const cv = $('#preview') as HTMLCanvasElement; const g = cv
   $('#genInfo').textContent = `${world.nations.filter((_, i) => world.regions.some(r => r.nation === i)).length} nations · ${world.regions.length} cities · ${world.edges.filter(e => e.land).length} roads · ${world.lakes.length} new seas`; }
 function newGame(n: number) { start(Sim.create(world, n)); toast('Tip: tap one of your armies (chess pieces), then MOVE or STRIKE'); }
 function start(s: State) { if (JSON.stringify(s.world) !== JSON.stringify(world?.params)) { world = generateWorld(base, s.world); R.setWorld(world); }
-  sim = new Sim(world, s); $('#start').style.display = 'none'; $('#hud').style.display = ''; lastEv = s.tick; const cap = world.regions.findIndex(r => s.regions[r.id].o === s.player && r.cap); const c = cap >= 0 ? cap : s.regions.findIndex(r => r.o === s.player); R.focus(c, 2.6); select(c); hud(); }
+  sim = new Sim(world, s); $('#start').style.display = 'none'; $('#hud').style.display = ''; lastEv = s.tick; const cap = world.regions.findIndex(r => s.regions[r.id].o === s.player && r.cap); const c = cap >= 0 ? cap : s.regions.findIndex(r => r.o === s.player); R.focus(c, 3.6); select(c); hud(); }
 let actx: AudioContext | null = null; addEventListener('pointerdown', () => { if (!actx) try { actx = new AudioContext(); } catch { } }, { once: true });
 function beep() { if (!actx) return; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 880; o.type = 'square'; g.gain.setValueAtTime(0.06, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.25); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.26); }
 function save() { if (!sim) return; localStorage.setItem(SAVE, JSON.stringify(sim.s)); toast('Game saved'); }
@@ -62,19 +64,50 @@ function loop(t: number) { const dt = Math.min(250, t - last); last = t;
   if (sim && speed > 0 && !sim.s.over) { acc += dt * speed; let n = 0; while (acc >= TICK_MS && n < 6) { sim.step(pending); pending = []; acc -= TICK_MS; n++; } if (n) { hud(); panel(true); } }
   if (sim && speed === 0 && pending.length) { for (const c of pending) { const e = sim.apply(c); if (e) toast(e); } pending = []; hud(); panel(); }
   if (sim) R.draw(sim, speed && !sim.s.over ? acc / TICK_MS : 0, dt); requestAnimationFrame(loop); }
+let unread = 0, moreOpen = false; const flagURL = new Map<string, string>(); const fURL = (n: number) => { const k = 'f' + n; if (!flagURL.has(k)) flagURL.set(k, nflag(n, 48).toDataURL()); return flagURL.get(k)!; };
+const RES_TILE: Record<keyof Res, [string, string]> = { money: ['$', '#ffd34d'], manpower: ['👥', '#8fd0ff'], tech: ['⚛', '#c69bff'] };
 function hud() { if (!sim) return; const s = sim.s, N = s.nations[s.player], inc = sim.income(s.player);
   const troops = s.armies.filter(a => a.o === s.player).reduce((x, a) => x + csum(a.c), 0);
-  $('#res').innerHTML = RES_KEYS.map(k => `<div class="r"><i style="color:${RES_LBL[k][1]}">${RES_LBL[k][0]}</i><b>${fmt(N.res[k])}</b><small>+${fmt(inc[k] * 2)}/s</small></div>`).join('') +
-    `<div class="r"><i style="color:#9fd17a">FORCES</i><b>${fmt(troops)}</b><small>cap ${sim.unitCap(s.player)}</small></div><div class="r"><i style="color:#ff9d4d">MISSILES</i><b>${N.missiles.cruise}/${N.missiles.ballistic}</b><small>cruise/ballistic</small></div>`;
-  const day = Math.floor(s.tick / 120) + 1; $('#clock').textContent = `DAY ${day} · ${String(Math.floor((s.tick % 120) / 5)).padStart(2, '0')}:00`;
-  for (const e of s.events) if (e.tick > lastEv) toast(e.text, e.r); if (s.events.length) lastEv = Math.max(lastEv, s.events[s.events.length - 1].tick);
+  $('#res').innerHTML = RES_KEYS.map(k => `<div class="r"><span class="ri" style="background:${RES_TILE[k][1]}">${RES_TILE[k][0]}</span><div><b>${fmt(N.res[k])}</b><small>+${fmt(inc[k] * 2)}</small></div></div>`).join('') +
+    `<div class="r"><span class="ri" style="background:#9fd17a">⚔</span><div><b>${fmt(troops)}</b><small>/${sim.unitCap(s.player)}</small></div></div><div class="r gold" title="Meridian Gold"><span class="ri" style="background:#fff3c4">◆</span><div><b>${N.missiles.cruise}/${N.missiles.ballistic}</b><small>MISSILES</small></div></div>`;
+  const day = Math.floor(s.tick / 120) + 1; $('#day').textContent = `Day ${day}`; $('#clock').textContent = `${String(Math.floor((s.tick % 120) / 5)).padStart(2, '0')}:${String((s.tick % 5) * 12).padStart(2, '0')}`;
+  const vp = s.regions.reduce((v, r, i) => v + (r.o === s.player ? cityLevel(world.regions[i].pop) * 10 : 0), 0); $('#vp').textContent = `★ ${vp} VP`; $('#pname').textContent = world.nations[s.player].name;
+  const pf = $('#pflag') as HTMLCanvasElement; if (pf.dataset.n !== String(s.player)) { pf.dataset.n = String(s.player); const gg = pf.getContext('2d')!; gg.drawImage(nflag(s.player, 48), 0, 0, 48, 32); }
+  for (const e of s.events) if (e.tick > lastEv) { toast(e.text, e.r); unread++; } if (s.events.length) lastEv = Math.max(lastEv, s.events[s.events.length - 1].tick);
+  $('#notifT').textContent = `You have ${unread} new game event${unread === 1 ? '' : 's'}`; $('#notif').classList.toggle('hide', unread === 0 || R.selArmy >= 0 || $('#panel').classList.contains('open')); $('#evBadge').textContent = unread ? String(Math.min(99, unread)) : '';
+  const qn = s.regions.filter(r => r.o === s.player && (r.q || r.pq.length)).length; $('#cityBadge').textContent = qn ? String(qn) : '';
+  if (R.selArmy >= 0) ucard();
   if (s.over && !$('#over').dataset.shown) { $('#over').dataset.shown = '1'; $('#over').style.display = ''; $('#overT').textContent = s.over === 'victory' ? 'VICTORY' : 'DEFEAT'; } }
+const vehURL = new Map<string, string>(); const vURL = (t: UKey) => { if (!vehURL.has(t)) vehURL.set(t, vehicle(t, 160).toDataURL()); return vehURL.get(t)!; };
+function ucard() { const box = $('#ucard'); if (!sim) { box.style.display = 'none'; return; } const s = sim.s; const a = s.armies.find(x => x.id === R.selArmy); const k = a ? null : s.strikes.find(x => x.id === R.selArmy && x.o === s.player);
+  if (k && !moreOpen) { box.style.display = ''; const kt = (Object.keys(k.c) as UKey[]).sort((p, q) => k.c[q]! - k.c[p]!); const n = csum(k.c) + Object.values(k.m).reduce((x, y) => x + (y || 0), 0); const left = Math.max(0, k.dist - k.prog) / k.spd; const mins = Math.round(left * 12); const dest = world.regions[k.back ? k.home : k.target].n;
+    const st = k.scout && !k.back && k.prog >= k.dist ? `Scouting over ${dest}` : `${k.back ? 'Returning to' : 'Flying to'} ${dest} : <b>${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m</b>`; const top = kt[0] || 'uav';
+    const key = ['k', k.id, st].join('|'); if (box.dataset.k === key) return; box.dataset.k = key;
+    $('#abar').innerHTML = `<button class="a-more" id="aMore">⋯<span>MORE</span></button><button class="a-stop dis">■<span>STOP</span></button><button class="a-patrol dis">⟲<span>PATROL</span></button><button class="a-attack dis">✛<span>ATTACK</span></button><button class="a-ferry dis">➜<span>FERRY</span></button><button class="a-load dis">⚙<span>LOADOUT</span></button>`;
+    $('#uinfo').innerHTML = `<div class="ut"><div class="un"><img src="${fURL(k.o)}" style="width:24px;height:16px;border:1px solid #0006">${k.scout ? 'Recon Flight' : 'Strike Package'} <small style="color:#56636e">×${n}</small></div><div class="us">${st}</div><div class="ust">${kt.slice(0, 3).map(t => `<span><em>${UNITS[t].name.toUpperCase()}</em>${k.c[t]}</span>`).join('')}${Object.keys(k.m).map(m => `<span><em>${m.toUpperCase()}</em>${(k.m as any)[m]}</span>`).join('')}</div></div><div class="dia"><div><img src="${vURL(top)}"></div></div>`;
+    (document.getElementById('aMore') as HTMLElement).onclick = () => { moreOpen = true; tab = 'nation'; R.sel = k.target; panel(); }; return; }
+  if (!a || moreOpen) { box.style.display = 'none'; if (!a && !k && R.selArmy >= 0) R.selArmy = -1; return; }
+  box.style.display = ''; const mine = a.o === s.player; const air = sim.dom(a) === 'air'; const canStrike = air || (a.c.launcher || 0) > 0; const types = (Object.keys(a.c) as UKey[]).sort((p, q) => a.c[q]! * UNITS[q].pp - a.c[p]! * UNITS[p].pp); const top = types[0]; const n = csum(a.c);
+  let status = 'Idle at ' + world.regions[a.r].n; if (a.path.length) { const dest = a.path[a.path.length - 1]; let len = -a.prog, cur = a.r; for (const q of a.path) { const e = sim.edgeBetween(cur, q); if (e >= 0) len += world.edges[e].len; cur = q; } const spd = Math.max(0.5, Math.min(...types.map(k => UNITS[k].spd))); const mins = Math.round(len / spd * 12); status = `${air ? 'Flying' : 'Moving'} to ${world.regions[dest].n} : <b>${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m</b>`; }
+  else if (air) status = 'Combat air patrol over ' + world.regions[a.r].n;
+  const atk = types.reduce((v, k) => v + UNITS[k].atk * a.c[k]!, 0), hp = types.reduce((v, k) => v + UNITS[k].hp * a.c[k]!, 0), spd = Math.min(...types.map(k => UNITS[k].spd));
+  const key = [a.id, a.path.length, status, n, mine].join('|'); if (box.dataset.k === key) return; box.dataset.k = key;
+  const B = (cls: string, ic: string, lb: string, id: string, ok: boolean) => `<button class="${cls} ${ok ? '' : 'dis'}" id="${id}">${ic}<span>${lb}</span></button>`;
+  $('#abar').innerHTML = mine ? B('a-more', '⋯', 'MORE', 'aMore', true) + B('a-stop', '■', 'STOP', 'aStop', a.path.length > 0) + B('a-patrol', '⟲', 'PATROL', 'aPatrol', air) + B('a-attack', '✛', 'ATTACK', 'aAtk', true) + B('a-ferry', '➜', air ? 'REBASE' : 'FERRY', 'aFerry', true) + B('a-load', '⚙', 'LOADOUT', 'aLoad', canStrike || !!(a.c.recon || a.c.uav)) : B('a-more', '⋯', 'MORE', 'aMore', true);
+  $('#uinfo').innerHTML = `<div class="ut"><div class="un"><img src="${fURL(a.o)}" style="width:24px;height:16px;border:1px solid #0006">${mine ? '' : world.nations[a.o].name + ' · '}${UNITS[top].name}${types.length > 1 ? ' Group' : ''} <small style="color:#56636e">×${n}</small></div><div class="us">${status}</div><div class="ust"><span><em>ATTACK</em>${fmt(atk)}</span><span><em>HEALTH</em>${fmt(hp)}</span><span><em>SPEED</em>${spd}</span><span><em>TYPES</em>${types.length}</span></div></div><div class="dia"><div><img src="${vURL(top)}"></div></div>`;
+  const on = (id: string, f: () => void) => { const e = document.getElementById(id); if (e && !e.classList.contains('dis')) e.onclick = f; };
+  on('aMore', () => { moreOpen = true; tab = mine ? 'armies' : 'region'; panel(); });
+  on('aStop', () => { pending.push({ type: 'stop', nation: s.player, army: a.id }); toast('Unit stopping at next city'); });
+  on('aPatrol', () => toast(`Combat air patrol over ${world.regions[a.r].n}`));
+  on('aAtk', () => canStrike ? beginMode('strike', 1) : beginMode('move', 1));
+  on('aFerry', () => beginMode('move', air ? 1 : 0.5));
+  on('aLoad', () => { moreOpen = true; tab = 'armies'; panel(); }); }
 function toast(text: string, r?: number) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = text; if (r !== undefined) d.onclick = () => { R.focus(r, Math.max(R.cam.z, 2.5)); select(r); }; $('#toasts').prepend(d); while ($('#toasts').children.length > 4) $('#toasts').lastChild!.remove(); setTimeout(() => d.remove(), 5000); }
-function select(r: number) { R.sel = r; if (R.mode === 'none') { const mine = sim && r >= 0 ? sim.s.armies.filter(a => a.r === r && a.o === sim!.s.player && !a.path.length) : []; R.selArmy = mine.length ? mine[0].id : -1; if (R.selArmy >= 0 && tab === 'region') tab = 'armies'; } panel(); }
-function selectArmy(id: number) { if (!sim) return; const a = sim.s.armies.find(x => x.id === id); if (!a) return; R.sel = a.r; if (a.o === sim.s.player) { R.selArmy = id; tab = 'armies'; } else tab = 'region'; panel(); }
+function select(r: number) { moreOpen = false; R.sel = r; if (R.mode === 'none') { const mine = sim && r >= 0 ? sim.s.armies.filter(a => a.r === r && a.o === sim!.s.player && !a.path.length) : []; R.selArmy = mine.length ? mine[0].id : -1; if (R.selArmy >= 0 && tab === 'region') tab = 'armies'; } panel(); }
+function selectArmy(id: number) { if (!sim) return; const a = sim.s.armies.find(x => x.id === id); if (!a) { if (sim.s.strikes.some(k => k.id === id)) { R.selArmy = id; moreOpen = false; panel(); } return; } R.sel = a.r; moreOpen = false; R.selArmy = id; tab = a.o === sim.s.player ? 'armies' : 'region'; panel(); }
 const compHTML = (c: any, col: string) => (Object.keys(c) as (UKey)[]).sort((a, b) => c[b] - c[a]).map(k => `<span class="uc" title="${UNITS[k].name}"><img src="${pimg(k, col)}">${fmt(c[k])}</span>`).join('');
 function panel(soft = false) {
-  const el = $('#panel'); if (!sim || R.sel < 0) { el.classList.remove('open'); return; }
+  const el = $('#panel'); ucard(); if (!sim || R.sel < 0 || (R.selArmy >= 0 && !moreOpen)) { el.classList.remove('open'); return; }
   if (soft && (Date.now() - +(el.dataset.t || 0) < 900)) return; el.dataset.t = String(Date.now());
   if (soft && el.matches(':hover') && tab !== 'region') { /* keep stable while interacting */ }
   const s = sim.s, r = R.sel, Rs = s.regions[r], W = world.regions[r], mine = Rs.o === s.player, N = s.nations[s.player];
@@ -113,10 +146,11 @@ function panel(soft = false) {
       <div>✈ <b>Jets & bombers</b> ← <b>SAM</b> sites/batteries and enemy <b>fighters</b> (escort with your own)</div>
       <div>📡 <b>EW jamming</b> ← your <b>GPS anti-jam</b> upgrades; destroy EW stations with ballistic/bomber strikes</div>
       <div>🎯 <b>Recon drones</b> in a package add +40% accuracy</div></div>`;
+    const evs = s.events.slice(-6).reverse(); if (evs.length) body = `<div class="ph2">GAME EVENTS</div>` + evs.map(e => `<div class="rep">🔔 ${e.text}</div>`).join('') + body;
     const rep = s.reports.slice(-3).reverse(); if (rep.length) body += `<div class="muted">Recent strikes:</div>` + rep.map(x => `<div class="rep ${x.att === s.player ? 'me' : ''}">${x.att === s.player ? '🎯' : x.def === s.player ? '🚨' : '•'} ${world.nations[x.att].name} → ${world.regions[x.target].n}: sent ${x.sent}. <b>${x.shot}</b> shot down, <b>${x.jammed}</b> jammed, <b>${x.hits}</b> hit.</div>`).join('');
   }
   el.innerHTML = head + tabs + body; el.classList.add('open');
-  el.querySelector('#close')!.addEventListener('click', () => { R.sel = -1; R.selArmy = -1; panel(); });
+  el.querySelector('#close')!.addEventListener('click', () => { R.sel = -1; R.selArmy = -1; moreOpen = false; panel(); });
   el.querySelectorAll('[data-tab]').forEach(x => (x as HTMLElement).onclick = () => { tab = (x as HTMLElement).dataset.tab as any; panel(); });
   el.querySelectorAll('[data-b]').forEach(x => (x as HTMLElement).onclick = () => issue({ type: 'build', nation: s.player, region: r, b: (x as HTMLElement).dataset.b as BKey }));
   el.querySelectorAll('[data-army]').forEach(x => (x as HTMLElement).onclick = () => { R.selArmy = +(x as HTMLElement).dataset.army!; panel(); });
@@ -148,8 +182,14 @@ function setupInput() {
   document.querySelectorAll('.spd').forEach(b => (b as HTMLElement).onclick = () => setSpeed(+(b as HTMLElement).dataset.s!));
   $('#menuBtn').onclick = () => $('#menu').classList.toggle('open'); $('#saveBtn').onclick = () => { save(); $('#menu').classList.remove('open'); }; $('#loadBtn2').onclick = () => { load(); $('#menu').classList.remove('open'); };
   $('#newBtn').onclick = () => { $('#menu').classList.remove('open'); sim = null; $('#hud').style.display = 'none'; $('#start').style.display = ''; setupStart(); };
-  $('#homeBtn').onclick = () => { if (!sim) return; const c = world.regions.findIndex(r => sim!.s.regions[r.id].o === sim!.s.player && r.cap); const k = c >= 0 ? c : sim.s.regions.findIndex(r => r.o === sim!.s.player); R.focus(k, 2.6); select(k); };
+  $('#homeBtn').onclick = () => { if (!sim) return; const c = world.regions.findIndex(r => sim!.s.regions[r.id].o === sim!.s.player && r.cap); const k = c >= 0 ? c : sim.s.regions.findIndex(r => r.o === sim!.s.player); R.focus(k, 3.6); select(k); };
   $('#cancelMove').onclick = () => endMode(-1);
+  ($('#advImg') as HTMLImageElement).src = avatar(80); ($('#ava') as HTMLImageElement).src = avatar(52);
+  const capR = () => { const c = world.regions.findIndex(r => sim!.s.regions[r.id].o === sim!.s.player && r.cap); return c >= 0 ? c : sim!.s.regions.findIndex(r => r.o === sim!.s.player); };
+  const openTab = (t: typeof tab, r = R.sel >= 0 ? R.sel : capR()) => { if (!sim) return; R.selArmy = -1; moreOpen = false; R.sel = r; tab = t; unread = 0; panel(); hud(); };
+  document.querySelectorAll('[data-nav]').forEach(b => { const k = (b as HTMLElement).dataset.nav; if (k === 'more') return; (b as HTMLElement).onclick = () => k === 'city' ? (() => { const c = capR(); R.focus(c, 3.6); openTab('region', c); })() : openTab('nation'); });
+  $('#evBtn').onclick = () => openTab('nation'); $('#notif').onclick = () => openTab('nation'); $('#offBtn').onclick = () => toast('Supply convoy offers arrive with the Market update');
+  $('#advBtn').onclick = () => { if (!sim) return; const N = sim.s.nations[sim.s.player]; const idle = sim.s.armies.filter(a => a.o === sim!.s.player && !a.path.length).length; toast(`Advisor: ${idle} idle groups. ${N.missiles.cruise + N.missiles.ballistic ? 'Missiles ready for strikes.' : 'Queue missiles at a Missile Site.'} Cover airfields with SAM sites.`); };
   setInterval(() => { if (sim && !sim.s.over) localStorage.setItem(SAVE, JSON.stringify(sim.s)); }, 30000);
 }
 function tap(x: number, y: number) { if (R.mode !== 'none') { const r = R.pickRegion(x, y); endMode(r); if (r >= 0) select(r); return; } const id = R.pickArmy(x, y); if (id >= 0) return selectArmy(id); select(R.pickRegion(x, y)); }

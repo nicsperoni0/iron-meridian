@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const URL = process.env.URL || 'http://localhost:8787/';
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }); const p = await ctx.newPage();
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
+const G = (fn, a) => p.evaluate(fn, a); const shot = n => p.screenshot({ path: `screenshots/${n}.png` });
+await p.goto(URL); await p.waitForSelector('.nation'); await G(() => window.__game.setParams({ seed: 2026, extra: 0, distortion: 0 })); await p.fill('#search', 'Turkey'); await p.click('.nation'); await p.waitForTimeout(1500);
+// make an enemy hostile & let events accumulate
+await G(() => { const g = window.__game, s = g.sim.s; const P = s.player; const foe = s.regions.find((R, i) => R.o !== P && g.sim.dist(g.world.regions.find(r => r.cap && s.regions[r.id].o === P).id, i) < 200).o; s.nations[foe].target = P; s.nations[P].target = foe; g.R.sel = -1; g.R.selArmy = -1; g.panel?.(); });
+await G(() => window.__game.setSpeed(4)); await p.waitForTimeout(4000); await G(() => window.__game.setSpeed(1));
+const z = await G(() => window.__game.R.cam.z); ok(z >= 3.4, 'default zoom close on home country (' + z + ')');
+await shot('v4-overview');
+ok(await p.isVisible('#nav') && await p.isVisible('#side') && await p.isVisible('#pbar'), 'CoN-style HUD: top bar, side buttons, bottom nav');
+await G(() => { const g = window.__game, s = g.sim.s; const big = g.world.regions.filter(r => s.regions[r.id].o === s.player).sort((a, b) => b.pop - a.pop)[0]; g.R.focus(big.id, 6.5); g.R.sel = -1; g.R.selArmy = -1; }); await p.waitForTimeout(800); await shot('v4-zoomed-city');
+const air = await G(() => { const g = window.__game, sim = g.sim, s = sim.s, P = s.player; const af = s.armies.find(a => a.o === P && sim.dom(a) === 'air' && (a.c.fighter || a.c.bomber)); af.c.bomber = (af.c.bomber || 0) + 2; af.c.fighter = (af.c.fighter || 0) + 2;
+  const foe = g.world.regions.filter(r => s.regions[r.id].o !== P && sim.dist(af.r, r.id) > 120 && sim.dist(af.r, r.id) < 260).sort((a, b) => sim.dist(af.r, a.id) - sim.dist(af.r, b.id))[0];
+  g.cmd({ type: 'strike', nation: P, army: af.id, target: foe.id, kinds: ['bomber', 'fighter'] }); return { r: af.r, t: foe.id }; });
+await p.waitForTimeout(1200);
+await G(a => { const g = window.__game, s = g.sim.s; const k = s.strikes.find(k => k.o === s.player && k.target === a.t); const A = g.world.regions[a.r], T = g.world.regions[a.t]; g.R.cam.z = 3.6; g.R.cam.x = (A.x + T.x) / 2 - 195 / 3.6; g.R.cam.y = (A.y + T.y) / 2 - 380 / 3.6; g.selectArmy(k.id); }, air); await p.waitForTimeout(900);
+ok(await p.isVisible('#ucard') && await p.isVisible('#abar .a-attack'), 'unit selected shows action bar + info card'); await shot('v4-air-unit-selected');
+await G(() => { const g = window.__game, sim = g.sim, s = sim.s, P = s.player; const cap = g.world.regions.find(r => r.cap && s.regions[r.id].o === P).id; s.regions[cap].b.samsite = 2; const foe = s.regions.findIndex((R, i) => R.o !== P && R.o === s.nations.findIndex(N => N.target === P) && sim.dist(cap, i) < 260); if (foe >= 0) s.regions[foe].b.samsite = 1; s.armies.filter(a => a.o === P).forEach(a => { if (sim.dom(a) === 'air') a.c.awacs = 1; });
+  g.R.selArmy = -1; g.R.sel = -1; g.R.focus(cap, 2.4); });
+await p.waitForTimeout(1500); await shot('v4-air-defense');
+ok(errs.length === 0, 'no console errors ' + errs.join(' | ')); await b.close();

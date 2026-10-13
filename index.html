@@ -5,11 +5,15 @@
 <title>Iron Meridian</title></head><body>
 <canvas id="map"></canvas>
 <div id="hud" style="display:none">
-  <div id="top"><div id="res"></div><div id="ctrl"><span id="clock"></span><button class="spd" data-s="0">❚❚</button><button class="spd on" data-s="1">1×</button><button class="spd" data-s="2">2×</button><button class="spd" data-s="4">4×</button><button id="homeBtn">⌂</button><button id="menuBtn">☰</button></div></div>
+  <div id="top"><div id="pbar"><img id="ava"><canvas id="pflag" width="48" height="32"></canvas><b id="pname"></b><span id="day"></span><span id="clock"></span><span id="vp"></span><div id="ctrl"><button class="spd" data-s="0">❚❚</button><button class="spd on" data-s="1">1×</button><button class="spd" data-s="4">4×</button></div></div><div id="res"></div></div>
+  <div id="side"><button id="homeBtn" title="Home">⌂</button><button id="evBtn" title="Events">📜<i id="evBadge"></i></button><button id="advBtn" title="Advisor"><img id="advImg"></button><button id="offBtn" title="Offers">🎁</button></div>
   <div id="menu"><button id="saveBtn">💾 Save game</button><button id="loadBtn2">📂 Load game</button><button id="newBtn">⟲ New game</button></div>
   <div id="toasts"></div>
   <div id="moveHint" style="display:none"><span id="hintT">Tap destination</span> <button id="cancelMove">Cancel</button></div>
+  <div id="ucard" style="display:none"><div id="abar"></div><div id="uinfo"></div></div>
+  <div id="notif"><span class="bell">🔔</span><span id="notifT">You have 0 new game events</span><b>›</b></div>
   <div id="panel"></div>
+  <div id="nav"><button data-nav="dip">🤝<span>Diplomacy</span></button><button data-nav="mkt">⚖<span>Market</span></button><button data-nav="city">🏙<span>Cities</span><i id="cityBadge"></i></button><button data-nav="res">🔬<span>Research</span></button><button id="menuBtn" data-nav="more">☰<span>More</span></button></div>
   <div id="over" style="display:none"><div><h2 id="overT">DEFEAT</h2><button onclick="location.reload()">New campaign</button></div></div>
 </div>
 <div id="start"><div class="box"><div class="logo">IRON <span>MERIDIAN</span></div><div class="sub">AIR · MISSILES · ELECTRONIC WARFARE · 2026</div>

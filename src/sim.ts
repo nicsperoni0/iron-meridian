@@ -63,8 +63,8 @@ export interface StrikeReport { tick: number; att: number; def: number; target: 
 export interface Nation { res: Res; alive: boolean; ai: boolean; focus: Focus; antijam: number; pp: number; missiles: Record<MKey, number>; target: number; mp: number }
 export interface RegionState { o: number; b: Partial<Record<BKey, number>>; q: { k: BKey; left: number } | null; g: number; pq: { u: UKey | MKey; left: number }[] }
 export interface State { v: 2; tick: number; rng: number; player: number; nextId: number; world: World['params']; nations: Nation[]; regions: RegionState[]; roads: number[]; armies: Army[]; strikes: Strike[]; fx: Fx[]; reports: StrikeReport[]; events: { tick: number; text: string; r?: number }[]; over?: string }
-export type Command =
-  | { type: 'move'; nation: number; army: number; dest: number; frac?: number }
+export type Command = { type: 'stop'; nation: number; army: number } |
+  { type: 'move'; nation: number; army: number; dest: number; frac?: number }
   | { type: 'strike'; nation: number; army: number; target: number; kinds: (UKey | MKey)[] }
   | { type: 'build'; nation: number; region: number; b: BKey }
   | { type: 'focus'; nation: number; focus: Focus }
@@ -161,6 +161,7 @@ export class Sim {
         if (!csum(a.c)) s.armies = s.armies.filter(x => x !== a); const A = this.w.regions[a.r]; s.strikes.push({ id: s.nextId++, o: n, home: a.r, target: cmd.target, c, m: {}, x0: A.x, y0: A.y, prog: 0, dist: d, spd: 11, hover: 40, scout: true }); return null; }
       case 'queue': { const e = this.queueCheck(n, cmd.region, cmd.u); if (e) return e; this.pay(n, this.unitCost(cmd.u)); s.regions[cmd.region].pq.push({ u: cmd.u, left: this.unitTime(cmd.u) }); return null; }
       case 'unqueue': { const R = s.regions[cmd.region]; if (R.o !== n || !R.pq[cmd.i]) return 'Invalid'; const q = R.pq.splice(cmd.i, 1)[0]; const c = this.unitCost(q.u); for (const k of RES_KEYS) N.res[k] += (c[k] || 0) * 0.8; return null; }
+      case 'stop': { const a = s.armies.find(x => x.id === cmd.army); if (!a || a.o !== n) return 'Invalid army'; a.path = a.path.slice(0, 1); return null; }
       case 'move': { const a = s.armies.find(x => x.id === cmd.army); if (!a || a.o !== n || a.r === cmd.dest) return 'Invalid army'; const dom = this.dom(a);
         if (dom === 'air') { if (!s.regions[cmd.dest].b.airfield || s.regions[cmd.dest].o !== n) return 'Aircraft rebase to your airfields only'; if (this.dist(a.r, cmd.dest) > 700) return 'Out of range'; a.r = cmd.dest; this.merge(a); return null; }
         const p = this.path(a.r, cmd.dest, dom); if (!p.length) return 'No route'; let mv = a;
