@@ -24,3 +24,13 @@ button{font:inherit;color:inherit;background:#1b2833;border:1px solid #3a4f5f;bo
 #search{width:100%;padding:11px;background:#0e1a24;border:1px solid #3a4f5f;color:#fff;border-radius:4px;font-size:15px;margin:10px 0}
 #nations{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nation{text-align:left;padding:10px;background:#122029;border-color:#2c4352}.nation b{display:block}.nation small{color:#8fa4b3}
 #over{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:30;text-align:center}
+.gen{background:#0e1a24;border:1px solid #2c4352;border-radius:6px;padding:8px;margin:8px 0}.genh{font-weight:800;letter-spacing:2px;color:#c9a24a;font-size:11px;margin-bottom:6px}
+#preview{width:100%;height:170px;border-radius:4px;display:block;background:#081420}.gen label{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px}.gen label b{color:#c9a24a;min-width:34px}.gen input[type=range]{flex:1}.gen input[type=number]{flex:1;padding:6px;background:#081420;color:#fff;border:1px solid #3a4f5f;border-radius:4px}
+.uc{display:inline-flex;align-items:center;gap:2px;background:#13212b;border-radius:12px;padding:1px 6px 1px 1px;margin:2px;font-weight:800;font-size:11px}.uc img{width:24px;height:30px}
+.comp{display:flex;flex-wrap:wrap}.army{width:100%;text-align:left;margin:3px 0;background:#13212b}.army.on{border-color:#ffd34d;background:#1f2c1c}
+.acts{display:flex;gap:5px}.acts .big{flex:1}.big.alt{background:#3a556a;color:#fff}.big.red{background:#c0392b;color:#fff}
+.kinds{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.kind{display:flex;align-items:center;gap:3px;font-size:11px;padding:3px 7px}.kind img{width:18px;height:22px}.kind.on{background:#c9a24a;color:#111}.kind.dis{opacity:.4}
+.intel{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:#1a1426;border:1px solid #4a3a66;border-radius:4px;padding:5px;margin:6px 0;font-size:11px}.intel b{width:100%;color:#c38bff;font-size:10px;letter-spacing:1px}.intel span{background:#0e0a16;padding:2px 6px;border-radius:8px}
+.rps{background:#101a22;border:1px solid #2c4352;border-radius:4px;padding:7px;margin:6px 0;font-size:11px;display:flex;flex-direction:column;gap:3px}.rps>b{color:#c9a24a;letter-spacing:1px}
+.rep{font-size:11px;background:#13212b;padding:5px;border-radius:3px;margin:3px 0}.rep.me{border-left:3px solid #6cc4ff}
+#res .r{min-width:0}

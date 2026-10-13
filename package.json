@@ -5,18 +5,22 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node scripts/postbuild.cjs",
     "preview": "vite preview",
-    "map": "node scripts/buildmap.cjs"
+    "map": "node scripts/buildworld.cjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/d3-delaunay": "^6.0.4",
     "mapshaper": "^0.7.84",
     "playwright": "^1.64.0",
     "topojson-client": "^3.1.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "d3-delaunay": "^6.0.4"
   }
 }
