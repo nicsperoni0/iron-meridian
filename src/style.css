@@ -34,3 +34,6 @@ button{font:inherit;color:inherit;background:#1b2833;border:1px solid #3a4f5f;bo
 .rps{background:#101a22;border:1px solid #2c4352;border-radius:4px;padding:7px;margin:6px 0;font-size:11px;display:flex;flex-direction:column;gap:3px}.rps>b{color:#c9a24a;letter-spacing:1px}
 .rep{font-size:11px;background:#13212b;padding:5px;border-radius:3px;margin:3px 0}.rep.me{border-left:3px solid #6cc4ff}
 #res .r{min-width:0}
+.prod{background:#0f1c14;border:1px solid #2f5a3a;border-radius:4px;padding:6px;margin:6px 0}.ph2{font-weight:800;letter-spacing:1px;color:#9fd17a;font-size:10px;margin:4px 0}
+.queue{display:flex;gap:4px;flex-wrap:wrap}.qi{display:flex;align-items:center;gap:2px;padding:2px 5px;font-size:10px}.qi img{width:20px;height:25px}
+.kind.pq{flex:1 1 46%;text-align:left}.kind.pq span{line-height:1.15}.kind.pq img{width:26px;height:32px}

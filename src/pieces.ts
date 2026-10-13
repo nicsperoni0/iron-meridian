@@ -5,7 +5,7 @@ function shade(hsl: string, dl: number) { const m = /hsl\((\d+),\s*(\d+)%,\s*(\d
 export function piece(t: UKey | 'missile', color: string, px: number): HTMLCanvasElement {
   const key = t + color + px; let c = cache.get(key); if (c) return c;
   c = document.createElement('canvas'); c.width = px; c.height = Math.round(px * 1.25); const g = c.getContext('2d')!; g.scale(px / 64, px / 64); g.lineJoin = 'round'; g.lineCap = 'round';
-  const air = ['fighter', 'bomber', 'uav', 'recon', 'loiter'].includes(t);
+  const air = ['fighter', 'bomber', 'uav', 'recon', 'loiter', 'awacs'].includes(t);
   // shadow
   g.fillStyle = 'rgba(0,0,0,0.45)'; g.beginPath(); g.ellipse(33, 74, 26, 6, 0, 0, 7); g.fill();
   // pedestal: base disk, column, top collar
@@ -44,9 +44,44 @@ export function piece(t: UKey | 'missile', color: string, px: number): HTMLCanva
     case 'uav': P([31, 12, 33, 12, 34, 22, 56, 26, 56, 29, 34, 28, 34, 38, 40, 41, 24, 41, 30, 38, 30, 28, 8, 29, 8, 26, 30, 22], body(12, 42)); g.fillStyle = '#ff5a3c'; g.fillRect(14, 29, 3, 3); g.fillRect(47, 29, 3, 3); break;
     case 'recon': P([30, 14, 34, 14, 35, 24, 52, 27, 52, 29, 35, 29, 34, 38, 30, 38, 29, 29, 12, 29, 12, 27, 29, 24], body(14, 38)); g.fillStyle = '#1a2026'; g.beginPath(); g.arc(32, 31, 4, 0, 7); g.fill(); g.fillStyle = '#7fe3ff'; g.beginPath(); g.arc(32, 31, 2, 0, 7); g.fill(); break;
     case 'loiter': P([32, 8, 35, 14, 35, 40, 29, 40, 29, 14], body(8, 40)); P([29, 22, 14, 32, 14, 35, 29, 30], body(22, 35)); P([35, 22, 50, 32, 50, 35, 35, 30], body(22, 35)); P([29, 36, 22, 42, 42, 42, 35, 36], body(36, 42)); g.fillStyle = '#ff5a3c'; g.beginPath(); g.arc(32, 11, 2, 0, 7); g.fill(); break;
+    case 'awacs': P([32, 14, 35, 22, 56, 30, 56, 33, 35, 31, 34, 42, 40, 45, 24, 45, 30, 42, 29, 31, 8, 33, 8, 30, 29, 22], body(14, 45)); g.fillStyle = '#e8ecef'; g.beginPath(); g.ellipse(32, 26, 12, 4, 0, 0, 7); g.fill(); g.stroke(); g.fillStyle = color; g.fillRect(22, 25, 20, 2); break;
+    case 'sf': g.fillStyle = '#2d3a2e'; g.beginPath(); g.moveTo(20, 46); g.quadraticCurveTo(20, 30, 32, 29); g.quadraticCurveTo(44, 30, 44, 46); g.closePath(); g.fill(); g.stroke(); g.beginPath(); g.arc(32, 23, 7, 0, 7); g.fillStyle = '#c9b79a'; g.fill(); g.stroke(); g.fillStyle = '#1a1f1a'; g.fillRect(25, 21, 14, 3.5); g.fillStyle = '#7dff9a'; g.fillRect(27, 21.6, 3, 2); g.fillRect(34, 21.6, 3, 2); g.fillStyle = '#2d3a2e'; g.beginPath(); g.ellipse(32, 18, 9, 4, 0, Math.PI, 0); g.fill(); g.stroke(); g.strokeStyle = '#111'; g.lineWidth = 3; g.beginPath(); g.moveTo(22, 42); g.lineTo(46, 28); g.stroke(); break;
     case 'missile': g.save(); g.translate(32, 30); g.rotate(-0.7); P([-3, -20, 0, -26, 3, -20, 3, 14, 8, 20, -8, 20, -3, 14], '#eef1f3'); g.restore(); break;
   }
   // glossy rim highlight on the topper
   g.globalCompositeOperation = 'source-atop'; const hl = g.createLinearGradient(0, 0, 64, 0); hl.addColorStop(0, 'rgba(255,255,255,0)'); hl.addColorStop(0.3, 'rgba(255,255,255,0.12)'); hl.addColorStop(0.5, 'rgba(255,255,255,0)'); g.fillStyle = hl; g.fillRect(0, 0, 64, 60); g.globalCompositeOperation = 'source-over';
   cache.set(key, c); return c;
+}
+
+// ---- v3 helpers: outlined, high-res chess pieces and top-down flying sprites ----
+const oc = new Map<string, HTMLCanvasElement>();
+/** Chess piece with a crisp dark outline + nation-colored insignia, rendered at device pixels. */
+export function bigPiece(t: UKey | 'missile', color: string, px: number): HTMLCanvasElement {
+  const key = 'B' + t + color + px; let c = oc.get(key); if (c) return c;
+  const pad = Math.ceil(px * 0.06); const src = piece(t, color, px);
+  const sil = document.createElement('canvas'); sil.width = src.width; sil.height = src.height; const sg = sil.getContext('2d')!; sg.drawImage(src, 0, 0); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#05080b'; sg.fillRect(0, 0, sil.width, sil.height);
+  c = document.createElement('canvas'); c.width = src.width + pad * 2; c.height = src.height + pad * 2; const g = c.getContext('2d')!;
+  const o = Math.max(1.5, px / 40); for (let a = 0; a < 8; a++) g.drawImage(sil, pad + Math.cos(a * Math.PI / 4) * o, pad + Math.sin(a * Math.PI / 4) * o);
+  g.drawImage(src, pad, pad);
+  // insignia on the pedestal front
+  const k = px / 64; g.fillStyle = color; g.strokeStyle = '#fff'; g.lineWidth = Math.max(1, k * 1.2); g.beginPath(); g.arc(pad + 32 * k, pad + 67 * k, 4.2 * k, 0, 7); g.fill(); g.stroke();
+  oc.set(key, c); return c;
+}
+/** Top-down sprite pointing +x, for animated flight. */
+export function airSprite(kind: string, color: string, px: number): HTMLCanvasElement {
+  const key = 'A' + kind + color + px; let c = oc.get(key); if (c) return c;
+  c = document.createElement('canvas'); c.width = c.height = px; const g = c.getContext('2d')!; g.translate(px / 2, px / 2); g.scale(px / 40, px / 40); g.lineJoin = 'round';
+  const metal = (() => { const q = g.createLinearGradient(0, -14, 0, 14); q.addColorStop(0, '#f4f7f9'); q.addColorStop(0.5, '#b6c0c7'); q.addColorStop(1, '#5d6870'); return q; })();
+  const P = (pts: number[], f: string | CanvasGradient) => { g.fillStyle = f; g.beginPath(); g.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.closePath(); g.fill(); g.strokeStyle = '#06090c'; g.lineWidth = 1.6; g.stroke(); };
+  g.shadowColor = 'rgba(0,0,0,0.6)'; g.shadowBlur = 3; g.shadowOffsetY = 3;
+  switch (kind) {
+    case 'fighter': P([18, 0, 6, -3, 0, -15, -4, -15, -3, -4, -12, -4, -16, -9, -18, -9, -16, 0, -18, 9, -16, 9, -12, 4, -3, 4, -4, 15, 0, 15, 6, 3], metal); g.shadowColor = 'transparent'; P([3, -4, -3, -4, -3, 4, 3, 4], color); g.fillStyle = '#7fd8ff'; g.beginPath(); g.ellipse(10, 0, 3.5, 1.6, 0, 0, 7); g.fill(); break;
+    case 'bomber': P([16, 0, 8, -2, -10, -18, -14, -18, -8, -6, -12, -4, -16, 0, -12, 4, -8, 6, -14, 18, -10, 18, 8, 2], metal); g.shadowColor = 'transparent'; P([2, -3, -8, -3, -8, 3, 2, 3], color); break;
+    case 'uav': case 'recon': P([14, 0, 10, -1.5, 2, -1.5, 0, -17, -3, -17, -3, -1.5, -11, -1.5, -14, -6, -15, -6, -14, 0, -15, 6, -14, 6, -11, 1.5, -3, 1.5, -3, 17, 0, 17, 2, 1.5, 10, 1.5], metal); g.shadowColor = 'transparent'; g.fillStyle = color; g.fillRect(-4, -2, 8, 4); if (kind === 'recon') { g.fillStyle = '#7fe3ff'; g.beginPath(); g.arc(9, 0, 2, 0, 7); g.fill(); } break;
+    case 'loiter': P([15, 0, 9, -2, -12, -2, -14, 0, -12, 2, 9, 2], metal); P([2, -2, -6, -13, -9, -13, -4, -2], metal); P([2, 2, -6, 13, -9, 13, -4, 2], metal); g.shadowColor = 'transparent'; g.fillStyle = '#ff5a3c'; g.beginPath(); g.arc(13, 0, 1.8, 0, 7); g.fill(); break;
+    case 'missile': P([18, 0, 13, -2.4, -12, -2.4, -16, -6, -16, 6, -12, 2.4, 13, 2.4], '#f2f4f6'); g.shadowColor = 'transparent'; g.fillStyle = '#ff5a3c'; g.fillRect(10, -2.4, 3, 4.8); g.fillStyle = color; g.fillRect(-6, -2.4, 4, 4.8); break;
+    case 'awacs': P([16, 0, 10, -2.5, 2, -2.5, -2, -18, -6, -18, -4, -2.5, -13, -2.5, -16, -8, -18, -8, -17, 0, -18, 8, -16, 8, -13, 2.5, -4, 2.5, -6, 18, -2, 18, 2, 2.5, 10, 2.5], metal); g.shadowColor = 'transparent'; g.fillStyle = '#e8ecef'; g.strokeStyle = '#06090c'; g.lineWidth = 1.4; g.beginPath(); g.ellipse(-3, 0, 7, 7, 0, 0, 7); g.fill(); g.stroke(); g.fillStyle = color; g.fillRect(-10, -1.2, 14, 2.4); break;
+    case 'ballistic': P([18, 0, 12, -3.5, -14, -3.5, -17, -8, -17, 8, -14, 3.5, 12, 3.5], '#e8eaec'); g.shadowColor = 'transparent'; g.fillStyle = '#20262b'; g.fillRect(12, -3.5, 2, 7); g.fillStyle = color; g.fillRect(-4, -3.5, 5, 7); break;
+  }
+  oc.set(key, c); return c;
 }

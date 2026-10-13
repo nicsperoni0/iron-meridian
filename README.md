@@ -1,14 +1,31 @@
-# Iron Meridian v2 — air, missiles & electronic warfare (mobile strategy prototype)
+# Iron Meridian v3 — air, missiles, EW & fog of war (mobile strategy prototype)
 
 Original game (no third-party art/names/assets). TypeScript + Vite + Canvas 2D, installable PWA.
 Live: https://nicsperoni0.github.io/iron-meridian/
 
     npm install && npm run build        # dist/ (postbuild stamps a new service-worker cache id)
     python3 -m http.server 8787 -d dist
-    node tests/v2.mjs                   # Playwright @390x844: worldgen 0%/100%, armies, roads, strikes vs SAM/EW, AI, save/load
+    node tests/v3.mjs                   # Playwright @390x844 (+ webm recording): worldgen, buildings/production, fog, recon/AWACS, strikes vs SAM/EW, AI
     npm run map                         # rebuild public/world2.json from Natural Earth (data/)
 
-## What's in v2
+## What's new in v3
+- **Visuals**: large outlined pseudo-3D chess pieces rendered at devicePixelRatio (sprite cache), screen-space min size,
+  screen-space clustering of overlapping stacks (expands when zoomed in), glowing/bobbing selected piece.
+  Animated flights on curved paths with heading rotation, contrails/missile smoke, propeller blur, mid-air interception
+  explosions, jammed drones spiraling away. Air patrols circle airfields. Rotating radar sweeps + ping rings (SAM, airfields,
+  EW, AWACS), radar blips + SAM LOCK lines on incoming aircraft/missiles, purple jamming static, INCOMING edge markers + beep.
+- **Production only from buildings** (no free spawning): Barracks (infantry, special forces), Factory (IFV, tank, artillery,
+  jammer, mobile anti-drone AA), Airfield (jets, bombers, drones, AWACS), Port (frigates), Missile Site (launchers, cruise &
+  ballistic missiles), Air Defense Site (SAM batteries). Player-controlled queues, unit cap from controlled population.
+  Nations open with 15–50 pre-placed ground units + a few starting buildings.
+- **City bonus buildings** (3 levels each): Sports Stadium (production speed), Skyscraper (money), Bridge (production + faster
+  roads from the city), Tech Campus (tech), Power Plant (all income + production), Hospital (manpower + garrison recovery).
+- **Fog of war** (in the deterministic sim, so the AI obeys it too): vision from own territory/units (short), SAM/airfield/EW
+  radars, special forces (stealthy: only revealed by close presence/drones), recon/attack drones hovering via SCOUT, and the
+  AWACS radar plane (big radius). Hidden regions are dimmed and show faded last-known pieces.
+- AI builds production + bonus buildings, queues units by doctrine, scouts with drones, strikes only what it can see.
+
+## v2 base
 - **World generation per game** (`src/world.ts`): real Natural Earth countries + 645 real major cities (picked by population,
   ~1 + sqrt(pop in millions) per country). Seed + 0–10 fictional nations carved out of existing ones + 0–100% distortion
   (country shift/scale, coastline noise, new inland seas). 0% = real world. Fully deterministic from `WorldParams`.
