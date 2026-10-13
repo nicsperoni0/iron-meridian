@@ -1,0 +1,22 @@
+{
+  "name": "iron-meridian",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "map": "node scripts/buildmap.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "mapshaper": "^0.7.84",
+    "playwright": "^1.64.0",
+    "topojson-client": "^3.1.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}

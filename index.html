@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b141c"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./icon-192.png"><link rel="icon" href="./icon-192.png">
+<title>Iron Meridian</title></head><body>
+<canvas id="map"></canvas>
+<div id="hud" style="display:none">
+  <div id="top"><div id="res"></div><div id="ctrl"><span id="clock"></span><button class="spd" data-s="0">❚❚</button><button class="spd on" data-s="1">1×</button><button class="spd" data-s="2">2×</button><button class="spd" data-s="4">4×</button><button id="homeBtn">⌂</button><button id="menuBtn">☰</button></div></div>
+  <div id="menu"><button id="saveBtn">💾 Save game</button><button id="loadBtn2">📂 Load game</button><button id="newBtn">⟲ New game</button></div>
+  <div id="toasts"></div>
+  <div id="moveHint" style="display:none">Tap destination province <button id="cancelMove">Cancel</button></div>
+  <div id="panel"></div>
+  <div id="over" style="display:none"><div><h2>DEFEAT</h2><p>Your nation has fallen.</p><button onclick="location.reload()">New campaign</button></div></div>
+</div>
+<div id="start"><div class="box"><div class="logo">IRON <span>MERIDIAN</span></div><div class="sub">MODERN WARFARE · 2026</div>
+<button id="loadBtn" class="big">▶ Continue saved game</button>
+<input id="search" placeholder="Search a nation…" autocomplete="off"><div id="nations"></div></div></div>
+<script type="module" src="/src/main.ts"></script></body></html>
